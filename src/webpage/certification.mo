@@ -48,7 +48,7 @@ module Certification {
             }
         };
         return
-        ("testing-certificate",
+        ("ic-certificate",
             "certificate=:" # base64(cert) # ":, " #
             "tree=:" # base64(cbor_tree(asset_tree(main_page))) # ":"
         )
@@ -86,6 +86,9 @@ module Certification {
     
     /*
      * Base64 encoding
+     * curl -s https://zrm7a-2yaaa-aaaan-qc2ea-cai.raw.ic0.app/|wc -c
+     * curl -s https://zrm7a-2yaaa-aaaan-qc2ea-cai.raw.ic0.app/|sha256sum -
+     * CB932262B5091EC8EAE69F81152E4954A3AD0D97610D5DA57A7025CADC61CF61
      */
     func base64(b : Blob) : Text {
         let base64_chars : [Text] = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9","+","/"];

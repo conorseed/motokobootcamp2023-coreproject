@@ -26,8 +26,8 @@ actor {
         if(path == "/") {
             return {
                 body = main_page();
-                //headers = [("content-type", "text/plain"), Certification.certification_header(main_page())];
-                headers = [];
+                headers = [("content-type", "text/plain"), Certification.certification_header(main_page())];
+                //headers = [];
                 status_code = 200;
                 streaming_strategy = null;
             };
@@ -51,10 +51,10 @@ actor {
 
     /*
      * Certification Stuff
-     
+     */
     system func postupgrade() {
         Certification.update_asset_hash(main_page());
-    };*/
+    };
 
     // https://gist.github.com/nomeata/f325fcd2a6692df06e38adedf9ca1877 
     // https://github.com/dfinity/examples/blob/master/motoko/cert-var/src/cert_var/main.mo

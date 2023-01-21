@@ -1,35 +1,66 @@
 export const idlFactory = ({ IDL }) => {
-  const Subaccount = IDL.Vec(IDL.Nat8);
-  const Account = IDL.Record({
-    'owner' : IDL.Principal,
-    'subaccount' : IDL.Opt(Subaccount),
+  const ProposalStatus = IDL.Variant({
+    'open' : IDL.Null,
+    'executed' : IDL.Null,
+    'failed' : IDL.Text,
+  });
+  const ProposalPayload = IDL.Variant({
+    'update_webpage' : IDL.Record({ 'message' : IDL.Text }),
+    'update_config' : IDL.Null,
   });
   const Proposal = IDL.Record({
-    'status' : IDL.Variant({
-      'Passed' : IDL.Null,
-      'Open' : IDL.Null,
-      'Rejected' : IDL.Null,
-    }),
-    'creator' : Account,
-    'votes' : IDL.Tuple(IDL.Nat, IDL.Nat),
+    'status' : ProposalStatus,
+    'votes_no' : IDL.Nat,
     'timestamp' : IDL.Int,
-    'payload' : IDL.Text,
+    'proposer' : IDL.Principal,
+    'votes_yes' : IDL.Nat,
+    'payload' : ProposalPayload,
+  });
+  const Vote = IDL.Record({
+    'voter' : IDL.Principal,
+    'vote' : IDL.Bool,
+    'timestamp' : IDL.Int,
+    'power' : IDL.Nat,
   });
   return IDL.Service({
     'get_all_proposals' : IDL.Func(
         [],
-        [IDL.Vec(IDL.Tuple(IDL.Int, Proposal))],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, Proposal))],
         ['query'],
       ),
-    'get_proposal' : IDL.Func([IDL.Int], [IDL.Opt(Proposal)], ['query']),
+    'get_proposal' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Opt(IDL.Tuple(IDL.Nat, Proposal))],
+        ['query'],
+      ),
+    'get_votes_from_principal' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, Vote))],
+        ['query'],
+      ),
+    'get_votes_from_proposal_id' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, Vote))],
+        ['query'],
+      ),
     'submit_proposal' : IDL.Func(
-        [IDL.Text],
-        [IDL.Variant({ 'Ok' : Proposal, 'Err' : IDL.Text })],
+        [ProposalPayload],
+        [
+          IDL.Variant({
+            'Ok' : IDL.Tuple(IDL.Nat, Proposal),
+            'Err' : IDL.Text,
+          }),
+        ],
         [],
       ),
     'vote' : IDL.Func(
-        [IDL.Int, IDL.Bool],
-        [IDL.Variant({ 'Ok' : IDL.Tuple(IDL.Nat, IDL.Nat), 'Err' : IDL.Text })],
+        [IDL.Nat, IDL.Bool],
+        [
+          IDL.Variant({
+            'Ok' : IDL.Tuple(IDL.Nat, Proposal),
+            'Err' : IDL.Text,
+          }),
+        ],
         [],
       ),
   });

@@ -1,15 +1,14 @@
 <script>
   export let post
+  export let proposer = ("owner" in post[1].proposer) ? post[1].proposer.owner.toString() : "guest" ;
 </script>
 
 <div class="post-preview">
   <h2>{post[0]}</h2>
-  <p>{post[1].creator.owner.toString()}</p>
+  <p>{proposer}</p>
   <p>Change website text to: {post[1].payload}</p>
   <p>
-    Yes: {(post[1].votes[0] / BigInt(100000000)).toString()}, No: {(
-      post[1].votes[1] / BigInt(100000000)
-    ).toString()}
+    Yes: {parseInt(post[1].votes_yes)}, No: {parseInt(post[1].votes_no)}
   </p>
 </div>
 

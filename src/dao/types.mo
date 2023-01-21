@@ -25,6 +25,7 @@ module DaoTypes{
     };
 
     public type Vote = {
+        voter: Principal;
         timestamp: Int;
         vote: Bool;
         power: Nat;

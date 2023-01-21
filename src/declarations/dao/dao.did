@@ -1,39 +1,60 @@
-type Subaccount = vec nat8;
+type Vote = 
+ record {
+   power: nat;
+   timestamp: int;
+   vote: bool;
+   voter: principal;
+ };
+type ProposalStatus = 
+ variant {
+   executed;
+   failed: text;
+   open;
+ };
+type ProposalPayload = 
+ variant {
+   update_config;
+   update_webpage: record {message: text;};
+ };
 type Proposal = 
  record {
-   creator: Account;
-   payload: text;
-   status: variant {
-             Open;
-             Passed;
-             Rejected;
-           };
+   payload: ProposalPayload;
+   proposer: principal;
+   status: ProposalStatus;
    timestamp: int;
-   votes: record {
-            nat;
-            nat;
-          };
- };
-type Account = 
- record {
-   owner: principal;
-   subaccount: opt Subaccount;
+   votes_no: nat;
+   votes_yes: nat;
  };
 service : {
   get_all_proposals: () -> (vec record {
-                                  int;
+                                  nat;
                                   Proposal;
                                 }) query;
-  get_proposal: (int) -> (opt Proposal) query;
-  submit_proposal: (text) -> (variant {
-                                Err: text;
-                                Ok: Proposal;
-                              });
-  vote: (int, bool) -> (variant {
+  get_proposal: (nat) -> (opt record {
+                                nat;
+                                Proposal;
+                              }) query;
+  get_votes_from_principal: (principal) -> (vec record {
+                                                  nat;
+                                                  Vote;
+                                                }) query;
+  get_votes_from_proposal_id: (nat) -> (vec record {
+                                              nat;
+                                              Vote;
+                                            }) query;
+  submit_proposal: (ProposalPayload) ->
+   (variant {
+      Err: text;
+      Ok: record {
+            nat;
+            Proposal;
+          };
+    });
+  vote: (nat, bool) -> (variant {
                           Err: text;
                           Ok: record {
                                 nat;
-                                nat;
+                                Proposal;
                               };
                         });
 }

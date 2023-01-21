@@ -22,15 +22,14 @@ actor {
     let { nhash; phash; } = Map;
 
     // Proposals
-    //var proposals = HashMap.HashMap<Nat, Dao.Proposal>(0, Nat.equal, Hash.hash);
-    var proposals = Map.new<Nat, Dao.Proposal>();
-    var new_proposal_id : Nat = 1;
+    stable var proposals = Map.new<Nat, Dao.Proposal>();
+    stable var new_proposal_id : Nat = 1;
 
     // Votes
-    var votes = Map.new<Principal, Dao.Votes>();
+    stable var votes = Map.new<Principal, Dao.Votes>();
 
     // Config
-    var config = {
+    stable var config = {
         min_to_propose: Nat = 1;
         min_to_vote: Nat = 1;
         threshold_pass: Nat = 100;
@@ -70,7 +69,6 @@ actor {
         };
         
         // Create Proposal
-        //proposals.put(new_proposal_id, new_proposal);
         ignore Map.put<Nat, Dao.Proposal>(proposals, nhash, new_proposal_id, new_proposal);
 
         // After created
@@ -92,7 +90,6 @@ actor {
         };
 
         // Get proposal
-        //let proposal = proposals.get(proposal_id);
         let proposal = Map.get(proposals, nhash, proposal_id);
 
         switch(proposal) {
@@ -121,7 +118,6 @@ actor {
                 // return #Err("You must have a minimum of " # Nat.toText(config.min_to_vote) # " MB to vote.");
 
                 // Only one vote per proposal per principle allowed
-                //let user_votes = List.find<Dao.Vote>(proposal.votes_list, func vote = vote.id == caller);
                 // get votes made by caller
                 var user_votes = Map.find<Principal, Dao.Votes>(votes, func(k,v){ k == caller });
                 var proposal_vote: ?(Nat, Dao.Vote) = null; 
@@ -143,7 +139,7 @@ actor {
 
                 // TODO
                 // calculate voting power
-                let voting_power = 100;
+                let voting_power = 80;
 
                 // setup vars for new proposal
                 var votes_yes = proposal.votes_yes;
@@ -170,6 +166,7 @@ actor {
 
                 // prepare create vote
                 let new_vote : Dao.Vote = {
+                    voter = caller;
                     timestamp = Time.now();
                     vote = yes_or_no;
                     power = voting_power;
@@ -203,7 +200,6 @@ actor {
                 };
 
                 // update proposal
-                //proposals.put(proposal_id, updated_proposal);
                 ignore Map.put<Nat, Dao.Proposal>(proposals, nhash, proposal_id, updated_proposal);
 
                 // TODO
@@ -221,8 +217,6 @@ actor {
      * Request a single proposal
      */
     public query func get_proposal(proposal_id : Nat) : async ?(Nat, Dao.Proposal) {
-        //let proposal = proposals.get(proposal_id);
-        //return (proposal_id, proposal);
         Map.find<Nat, Dao.Proposal>(proposals, func(k,v){ k == proposal_id });
     };
     
@@ -241,9 +235,9 @@ actor {
     };
 
     /*
-     * Request all votes
+     * Request votes from principal
      */
-    public query func get_votes(principal: Principal) : async [(Nat, Dao.Vote)] {
+    public query func get_votes_from_principal(principal: Principal) : async [(Nat, Dao.Vote)] {
         
         var user_votes = Map.find<Principal, Dao.Votes>(votes, func(k,v){ k == principal });
         
@@ -262,6 +256,45 @@ actor {
                 return [];
             };
         };
+    };
+
+    /*
+     * Request votes from proposal_id
+     */
+    public query func get_votes_from_proposal_id(proposal_id: Nat) : async [(Nat, Dao.Vote)] {
+
+        // Get proposal
+        let proposal = Map.get(proposals, nhash, proposal_id);
+
+        // return empty array if proposal doesn't exit
+        switch(proposal) {
+            case(null) { return []; };
+            case(?proposal) {};
+        };
+
+        // Setup buffer to store votes
+        var votes_buffer = Buffer.Buffer<(Nat, Dao.Vote)>(0);
+
+        // iterate over hashmap to find all votes 
+        for ((k,v) in Map.entries(votes)) {
+            
+            // see if user has voted on proposal_id
+            var proposal_votes = Map.find<Nat, Dao.Vote>(v.votes, func(k,v){ k == proposal_id });
+
+            switch(proposal_votes) {
+
+                // push vote to buffer if exists
+                case(?(proposal_id, vote)) { 
+                    votes_buffer.add((proposal_id, vote));
+                };
+                // user hasn't voted for this proposal
+                case(null){};
+            };
+
+        };
+
+        return Buffer.toArray<(Nat, Dao.Vote)>(votes_buffer);
+
     };
 
 

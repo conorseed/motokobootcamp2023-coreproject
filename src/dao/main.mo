@@ -35,7 +35,11 @@ shared ({ caller = creator }) actor class TheDao() {
         threshold_pass = 100;
         threshold_fail = 100;
         quadratic_voting = false;
+        proposal_length = 1800;
     };
+
+    // heartbeat
+    stable var heartbeat_last_run: Int = 0;
 
     // other vars
     let { nhash; phash; } = Map;
@@ -51,7 +55,7 @@ shared ({ caller = creator }) actor class TheDao() {
      * Submit Proposal
      * @required: non-anonymous principal
      */
-    public shared({caller}) func submit_proposal(payload: Dao.ProposalPayload) : async {#Ok : (Nat, Dao.Proposal); #Err : Text} {
+    public shared({caller}) func submit_proposal(payload: Dao.ProposalPayload, title: Text, description: Text) : async {#Ok : (Nat, Dao.Proposal); #Err : Text} {
         
         // Auth - No anonymous proposals
         if( Principal.isAnonymous(caller) == true ){
@@ -79,6 +83,8 @@ shared ({ caller = creator }) actor class TheDao() {
             votes_yes = 0;
             votes_no = 0;
             status = #open;
+            title = title;
+            description = description;
         };
         
         // Create Proposal
@@ -125,6 +131,9 @@ shared ({ caller = creator }) actor class TheDao() {
                     };
                     case(#passed) { 
                         return #Err("Proposal #" # Nat.toText(proposal_id) # " has passed and can no longer be voted on.");
+                    };
+                    case(#expired) { 
+                        return #Err("Proposal #" # Nat.toText(proposal_id) # " has expired and can no longer be voted on.");
                     };
                     case(#open) { };
                 };
@@ -204,6 +213,8 @@ shared ({ caller = creator }) actor class TheDao() {
                     votes_yes = votes_yes;
                     votes_no = votes_no;
                     status = status;
+                    title = proposal.title;
+                    description = proposal.description;
                 };
 
                 // store the updates
@@ -371,7 +382,21 @@ shared ({ caller = creator }) actor class TheDao() {
      // auto execute proposals once passed
      // auto expire proposals
     system func heartbeat() : async () {
-        await execute_proposals();
+        // get time
+        let time = Time.now();
+        let heartbeat_next_run = heartbeat_last_run + Dao.seconds_to_nanoseconds(60);
+
+        // only run every 1 minute
+        if(time > heartbeat_next_run){
+            
+            // Do things
+            await execute_proposals();
+            await expire_proposals();
+
+            // update heartbeat timer
+            heartbeat_last_run := time;
+        };
+        
     };
 
 
@@ -449,6 +474,8 @@ shared ({ caller = creator }) actor class TheDao() {
                         payload = proposal.payload;
                         votes_yes = proposal.votes_yes;
                         votes_no = proposal.votes_no;
+                        title = proposal.title;
+                        description = proposal.description;
                         status = #executed;
                     };
                 };
@@ -461,15 +488,56 @@ shared ({ caller = creator }) actor class TheDao() {
                         payload = proposal.payload;
                         votes_yes = proposal.votes_yes;
                         votes_no = proposal.votes_no;
+                        title = proposal.title;
+                        description = proposal.description;
                         status = #failed(reason);
                     };
                 };
             };
 
-            // updated proposal
+            // update proposal
             ignore Map.put<Nat, Dao.Proposal>(proposals, nhash, proposal_id, updated_proposal);
         };
 
     };
 
+    /*
+     * Expire #open proposals passed config.proposal_length
+     */
+    private func expire_proposals() : async  () {
+        // get open proposals
+        let open = Map.filter<Nat, Dao.Proposal>(proposals, func(proposal_id, proposal) { proposal.status == #open }); 
+
+        // get vars
+        let time: Int = Time.now();
+        let proposal_length: Int = Dao.seconds_to_nanoseconds(config.proposal_length);
+
+        // iterate over them all and check if expired
+        for ((proposal_id, proposal) in Map.entries(open)) {
+
+            // calculate expiry time
+            let proposal_expires = proposal.created + proposal_length;
+            
+            // check if time is after expiry
+            if( proposal_expires <= time ){
+
+                // then expire it
+                let updated_proposal = {
+                    created = proposal.created;
+                    updated = time;
+                    proposer = proposal.proposer;
+                    payload = proposal.payload;
+                    votes_yes = proposal.votes_yes;
+                    votes_no = proposal.votes_no;
+                    title = proposal.title;
+                    description = proposal.description;
+                    status = #expired;
+                };
+
+                // update proposal
+                ignore Map.put<Nat, Dao.Proposal>(proposals, nhash, proposal_id, updated_proposal);
+            }
+
+        };
+    };
 };

@@ -28,7 +28,7 @@ shared ({ caller = creator }) actor class Webpage() {
     public shared({ caller }) func update_message(message : Text) : async () {
         // only dao can update message
         if(caller != dao){
-            throw Error.reject("Only the DAO can update the message here. Caller: " # Principal.toText(caller) );
+            throw Error.reject("Only the DAO can update the message here." );
         };
 
         // Otherwise update message

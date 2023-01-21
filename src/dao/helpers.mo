@@ -27,11 +27,12 @@ module DaoHelpers{
     */
 
     public type Config = {
-        min_to_propose: Nat;
-        min_to_vote: Nat;
-        threshold_pass: Nat;
-        threshold_fail: Nat;
-        quadratic_voting: Bool;
+        min_to_propose: Nat; // Minimum MB required to propose
+        min_to_vote: Nat; // Minimum MB required to vote
+        threshold_pass: Nat; // proposal will pass if votes_yes reaches this threshold
+        threshold_fail: Nat; // proposal will fail if votes_no reaches this threshold
+        quadratic_voting: Bool; // when enabled voting power is equal to the square root of their MB token balance
+        proposal_length: Int; // length of time in seconds for a proposal to pass, otherwise it will auto fail
     };
 
     public type ConfigPayload = {
@@ -40,10 +41,11 @@ module DaoHelpers{
         threshold_pass: ?Nat;
         threshold_fail: ?Nat;
         quadratic_voting: ?Bool;
+        proposal_length: ?Int;
     };
 
     // TODO
-    // Add in Title, Description, Expiry
+    // Add in Title, Description
     public type Proposal = {
         created: Int;
         updated: Int;
@@ -52,6 +54,8 @@ module DaoHelpers{
         votes_yes: Nat;
         votes_no: Nat;
         status: ProposalStatus;
+        title: Text;
+        description: Text;
     };
 
     public type Vote = {
@@ -70,6 +74,7 @@ module DaoHelpers{
         #passed;
         #executed;
         #failed: Text;
+        #expired;
     };
 
     public type ProposalPayload = {
@@ -123,12 +128,18 @@ module DaoHelpers{
             case(null) current_config.quadratic_voting ;
         };
 
+        let proposal_length = switch(data.proposal_length) {
+            case(?proposal_length) proposal_length;
+            case(null) current_config.proposal_length ;
+        };
+
         let new_config: Config = {
             min_to_propose = min_to_propose;
             min_to_vote =  min_to_vote;
             threshold_pass = threshold_pass;
             threshold_fail = threshold_fail;
             quadratic_voting = quadratic_voting;
+            proposal_length = proposal_length;
         };
 
         return new_config;
@@ -156,12 +167,17 @@ module DaoHelpers{
         
     };
 
+    // convert seconds to nanoseconds
+    public func seconds_to_nanoseconds(time: Int) : Int{
+        return time * 1000000000;
+    };
 
     /* 
     ==========
     Utils
     ==========
     */
+    // calculate the square root of a nat
     private func sqrt(x : Nat) : Nat {
         if (x == 0) {
            return 0;

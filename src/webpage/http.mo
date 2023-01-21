@@ -1,3 +1,4 @@
+import Text "mo:base/Text";
 module Http {
     public type HeaderField = (Text, Text);
 
@@ -33,5 +34,16 @@ module Http {
     public type StreamingCallbackResponse = {
         body  : Blob;
         token : ?StreamingCallbackToken;
+    };
+
+    public func removeQuery(str: Text): Text {
+        switch(Text.split(str, #char '?').next()) {
+            case(null) {
+                return str;
+            };
+            case(?url) { 
+                return url;
+            };
+        };
     };
 }

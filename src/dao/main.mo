@@ -1,5 +1,5 @@
 /* CUSTOM IMPORTS */
-import Dao "types";
+import Dao "helpers";
 import Map "vendor/map/Map";
 
 /* BASE IMPORTS */
@@ -11,16 +11,15 @@ import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 import Iter "mo:base/Iter";
 import Buffer "mo:base/Buffer";
+import Error "mo:base/Error";
 
-actor {
+shared ({ caller = creator }) actor class TheDao() {
 
     /* 
     ==========
-    STABLE VARS
+    SETUP
     ==========
     */
-    let { nhash; phash; } = Map;
-
     // Proposals
     stable var proposals = Map.new<Nat, Dao.Proposal>();
     stable var new_proposal_id : Nat = 1;
@@ -29,13 +28,17 @@ actor {
     stable var votes = Map.new<Principal, Dao.Votes>();
 
     // Config
-    stable var config = {
-        min_to_propose: Nat = 1;
-        min_to_vote: Nat = 1;
-        threshold_pass: Nat = 100;
-        threshold_fail: Nat = 100;
-        quadratic_voting: Bool = false;
+    stable var config: Dao.Config = {
+        min_to_propose = 1;
+        min_to_vote = 1;
+        threshold_pass = 100;
+        threshold_fail = 100;
+        quadratic_voting = false;
     };
+
+    // other vars
+    let { nhash; phash; } = Map;
+    let owner : Principal = creator;
 
     /* 
     ==========
@@ -82,7 +85,7 @@ actor {
      * Vote on proposal
      * @required: non-anonymous principal
      */
-    public shared({caller}) func vote(proposal_id : Nat, yes_or_no : Bool) : async {#Ok : (Nat, Dao.Proposal); #Err : Text} {
+    public shared({caller}) func vote(proposal_id : Nat, yes_or_no : Bool) : async {#Ok : (Nat, Dao.Proposal, Text); #Err : Text} {
 
         // Auth - No anonymous proposals
         if( Principal.isAnonymous(caller) == true ){
@@ -90,7 +93,7 @@ actor {
         };
 
         // Get proposal
-        let proposal = Map.get(proposals, nhash, proposal_id);
+        var proposal = Map.get(proposals, nhash, proposal_id);
 
         switch(proposal) {
 
@@ -139,7 +142,7 @@ actor {
 
                 // TODO
                 // calculate voting power
-                let voting_power = 80;
+                let voting_power = 100;
 
                 // setup vars for new proposal
                 var votes_yes = proposal.votes_yes;
@@ -172,6 +175,52 @@ actor {
                     power = voting_power;
                 };
 
+                // prepare update proposal
+                let updated_proposal : Dao.Proposal = {
+                    timestamp = proposal.timestamp;
+                    proposer = proposal.proposer;
+                    payload = proposal.payload;
+                    votes_yes = votes_yes;
+                    votes_no = votes_no;
+                    status = status;
+                };
+
+
+                // if status is not #executed, then there's nothing else to do but return!
+                var response_message = "Your vote has been processed. Thanks!";
+
+                // if status moves to #executed, do the calls
+                if(status == #executed){
+
+                    switch(proposal.payload) {
+
+                        // If updating the message...
+                        case(#update_webpage(data)) { 
+                            let response = await Dao.update_webpage(data.message);
+                            // if call fails
+                            if(response == false){
+                                throw Error.reject("Something went wrong during execution of proposal.");
+                            };
+                            // otherwise all is well!
+                            response_message := "Your vote tipped the scales. Proposal #" # Nat.toText(proposal_id) #
+                                    " has been executed. Webpage message now reads: \"" # data.message # "\".";
+                            
+                        };
+
+                        // if updating Dao config...
+                        case(#update_config(data)) {
+                            // create new config and update
+                            let new_config = Dao.create_new_config(config, data);
+                            config := new_config;
+
+                            response_message := "Your vote tipped the scales. Proposal #" # Nat.toText(proposal_id) #
+                                    " has been executed. Dao config has been updated.";
+                        };
+                    };
+                };
+
+
+                // store the updates
                 // add vote to votes
                 switch(user_votes) {
                     case(?(principal, user_votes)) { 
@@ -187,30 +236,16 @@ actor {
                         ignore Map.put<Principal, Dao.Votes>(votes, phash, caller, user_votes);
                     };
                 };
-
-
-                // prepare update proposal
-                let updated_proposal : Dao.Proposal = {
-                    timestamp = proposal.timestamp;
-                    proposer = proposal.proposer;
-                    payload = proposal.payload;
-                    votes_yes = votes_yes;
-                    votes_no = votes_no;
-                    status = status;
-                };
-
+                
                 // update proposal
                 ignore Map.put<Nat, Dao.Proposal>(proposals, nhash, proposal_id, updated_proposal);
 
-                // TODO
-                // if status moves to #executed, do the calls
-
-
-                // return ok!
-                return #Ok((proposal_id, updated_proposal));
+                // return the good news
+                return #Ok(proposal_id, updated_proposal, response_message);
 
             };
         };
+
     };
 
     /*
@@ -295,6 +330,19 @@ actor {
 
         return Buffer.toArray<(Nat, Dao.Vote)>(votes_buffer);
 
+    };
+
+
+    /* 
+    ==========
+    CONFIG
+    ==========
+    */
+    /*
+     * Request Dao Config
+     */
+    public query func get_config() : async Dao.Config {
+        return config;
     };
 
 

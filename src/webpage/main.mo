@@ -3,25 +3,48 @@ import Text "mo:base/Text";
 import Option "mo:base/Option";
 import Http "http";
 import Certification "certification";
+import Principal "mo:base/Principal";
+import Error "mo:base/Error";
+import Debug "mo:base/Debug";
 
-actor {
+shared ({ caller = creator }) actor class Webpage() {
 
+    /* 
+    ==========
+    Setup
+    ==========
+    */
     stable var body_text : Text = "Hello there. General Kenobi.";
+    var owner: Principal = creator;
+    var dao: Principal = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");
+    // local: rrkah-fqaaa-aaaaa-aaaaq-cai
+    // ic: zwnzu-xaaaa-aaaan-qc2eq-cai
 
-    private func removeQuery(str: Text): Text {
-        switch(Text.split(str, #char '?').next()) {
-            case(null) {
-                return str;
-            };
-            case(?url) { 
-                return url;
-            };
+    /* 
+    ==========
+    Update the message
+    ==========
+    */
+    public shared({ caller }) func update_message(message : Text) : async () {
+        // only dao can update message
+        if(caller != dao){
+            throw Error.reject("Only the DAO can update the message here. Caller: " # Principal.toText(caller) );
         };
+
+        // Otherwise update message
+        body_text := message;
+        Certification.update_asset_hash(main_page());
     };
 
+
+    /* 
+    ==========
+    SERVE HTTP
+    ==========
+    */
     public query func http_request(req: Http.HttpRequest): async (Http.HttpResponse) {
 
-        let path = removeQuery(req.url);
+        let path = Http.removeQuery(req.url);
         
         if(path == "/") {
             return {
@@ -42,6 +65,8 @@ actor {
         };
     };
 
+
+    // Output html
     private func main_page(): Blob {
         return Text.encodeUtf8 (
             "Message from the canister:\n" #
@@ -49,18 +74,14 @@ actor {
         )
     };
 
-    /*
-     * Certification Stuff
-     */
+    /* 
+    ==========
+    Certification Stuff
+    https://gist.github.com/nomeata/f325fcd2a6692df06e38adedf9ca1877
+    ==========
+    */
     system func postupgrade() {
         Certification.update_asset_hash(main_page());
     };
 
-    // https://gist.github.com/nomeata/f325fcd2a6692df06e38adedf9ca1877 
-    // https://github.com/dfinity/examples/blob/master/motoko/cert-var/src/cert_var/main.mo
-
-    public shared func leave_message(msg : Text) : async () {
-        body_text := msg;
-        Certification.update_asset_hash(main_page());
-    };
 };

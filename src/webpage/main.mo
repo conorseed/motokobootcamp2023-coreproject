@@ -16,7 +16,7 @@ shared ({ caller = creator }) actor class Webpage() {
     */
     stable var body_text : Text = "Hello there. General Kenobi.";
     var owner: Principal = creator;
-    var dao: Principal = Principal.fromText("rrkah-fqaaa-aaaaa-aaaaq-cai");
+    var dao: Principal = Principal.fromText("zwnzu-xaaaa-aaaan-qc2eq-cai");
     // local: rrkah-fqaaa-aaaaa-aaaaq-cai
     // ic: zwnzu-xaaaa-aaaan-qc2eq-cai
 

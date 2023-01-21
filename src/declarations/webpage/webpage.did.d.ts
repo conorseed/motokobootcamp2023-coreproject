@@ -34,7 +34,6 @@ export type StreamingStrategy = {
     }
   };
 export interface Webpage {
-  'get_owner' : ActorMethod<[], Principal>,
   'http_request' : ActorMethod<[HttpRequest], HttpResponse>,
   'update_message' : ActorMethod<[string], undefined>,
 }

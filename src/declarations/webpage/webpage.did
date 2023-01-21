@@ -1,6 +1,5 @@
 type Webpage = 
  service {
-   get_owner: () -> (principal) query;
    http_request: (HttpRequest) -> (HttpResponse) query;
    update_message: (text) -> ();
  };

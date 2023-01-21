@@ -1,6 +1,7 @@
 import Principal "mo:base/Principal";
 import List "mo:base/List";
 import Map "vendor/map/Map";
+import Int "mo:base/Int";
 
 module DaoHelpers{
 
@@ -9,11 +10,15 @@ module DaoHelpers{
     VARS
     ==========
     */
-    public let webpage : actor {
+    let webpage : actor {
         update_message: (Text) -> async ();
-        } = actor ("rno2w-sqaaa-aaaaa-aaacq-cai");
+        } = actor ("zrm7a-2yaaa-aaaan-qc2ea-cai");
     // local: rno2w-sqaaa-aaaaa-aaacq-cai
     // ic: zrm7a-2yaaa-aaaan-qc2ea-cai
+
+    let mb_token : actor {
+        icrc1_balance_of : { owner : Principal; subaccount : ?[Nat8] } -> async Nat;
+        } = actor ("db3eq-6iaaa-aaaah-abz6a-cai");
 
     /* 
     ==========
@@ -37,8 +42,11 @@ module DaoHelpers{
         quadratic_voting: ?Bool;
     };
 
+    // TODO
+    // Add in Title, Description, Expiry
     public type Proposal = {
-        timestamp: Int;
+        created: Int;
+        updated: Int;
         proposer: Principal;
         payload: ProposalPayload;
         votes_yes: Nat;
@@ -59,6 +67,7 @@ module DaoHelpers{
 
     public type ProposalStatus = {
         #open;
+        #passed;
         #executed;
         #failed: Text;
     };
@@ -123,6 +132,54 @@ module DaoHelpers{
         };
 
         return new_config;
+    };
+
+    // get token balance for principal
+    public func get_token_balance(principal : Principal) : async Nat {
+        var balance = await mb_token.icrc1_balance_of({ owner = principal; subaccount = null; });
+        return balance / 100000000;
+    };
+
+    // calculate voting power
+    // for non neuron system
+    public func calculate_voting_power(balance: Nat, quadratic_voting: Bool) : Nat {
+        
+        switch(quadratic_voting){
+            case(false){
+                return balance;
+            };
+
+            case(true){
+                return sqrt(balance);
+            };
+        };
+        
+    };
+
+
+    /* 
+    ==========
+    Utils
+    ==========
+    */
+    private func sqrt(x : Nat) : Nat {
+        if (x == 0) {
+           return 0;
+        };
+
+        var pre : Int = 0;
+        var cur : Int = 1;
+
+        loop {
+            pre := cur;
+            cur := (cur + x/cur)/2;
+
+            if (Int.abs(cur - pre) <= 1) {
+                return Int.abs(cur);
+            };
+        } while(true);
+
+        Int.abs(cur);
     };
     
 }

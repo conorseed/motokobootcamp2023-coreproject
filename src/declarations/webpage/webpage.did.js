@@ -33,7 +33,6 @@ export const idlFactory = ({ IDL }) => {
     'status_code' : IDL.Nat16,
   });
   const Webpage = IDL.Service({
-    'get_owner' : IDL.Func([], [IDL.Principal], ['query']),
     'http_request' : IDL.Func([HttpRequest], [HttpResponse], ['query']),
     'update_message' : IDL.Func([IDL.Text], [], []),
   });

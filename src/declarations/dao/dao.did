@@ -5,6 +5,44 @@ type Vote =
    vote: bool;
    voter: principal;
  };
+type TheDao = 
+ service {
+   get_all_proposals: () -> (vec record {
+                                   nat;
+                                   Proposal;
+                                 }) query;
+   get_config: () -> (Config) query;
+   get_proposal: (nat) -> (opt record {
+                                 nat;
+                                 Proposal;
+                               }) query;
+   get_token_balance: (principal) -> (nat);
+   get_votes_from_principal: (principal) -> (vec record {
+                                                   nat;
+                                                   Vote;
+                                                 }) query;
+   get_votes_from_proposal_id: (nat) -> (vec record {
+                                               nat;
+                                               Vote;
+                                             }) query;
+   submit_proposal: (ProposalPayload) ->
+    (variant {
+       Err: text;
+       Ok: record {
+             nat;
+             Proposal;
+           };
+     });
+   vote: (nat, bool) ->
+    (variant {
+       Err: text;
+       Ok: record {
+             nat;
+             Proposal;
+             text;
+           };
+     });
+ };
 type ProposalStatus = 
  variant {
    executed;
@@ -13,7 +51,7 @@ type ProposalStatus =
  };
 type ProposalPayload = 
  variant {
-   update_config;
+   update_config: ConfigPayload;
    update_webpage: record {message: text;};
  };
 type Proposal = 
@@ -25,36 +63,20 @@ type Proposal =
    votes_no: nat;
    votes_yes: nat;
  };
-service : {
-  get_all_proposals: () -> (vec record {
-                                  nat;
-                                  Proposal;
-                                }) query;
-  get_proposal: (nat) -> (opt record {
-                                nat;
-                                Proposal;
-                              }) query;
-  get_votes_from_principal: (principal) -> (vec record {
-                                                  nat;
-                                                  Vote;
-                                                }) query;
-  get_votes_from_proposal_id: (nat) -> (vec record {
-                                              nat;
-                                              Vote;
-                                            }) query;
-  submit_proposal: (ProposalPayload) ->
-   (variant {
-      Err: text;
-      Ok: record {
-            nat;
-            Proposal;
-          };
-    });
-  vote: (nat, bool) -> (variant {
-                          Err: text;
-                          Ok: record {
-                                nat;
-                                Proposal;
-                              };
-                        });
-}
+type ConfigPayload = 
+ record {
+   min_to_propose: opt nat;
+   min_to_vote: opt nat;
+   quadratic_voting: opt bool;
+   threshold_fail: opt nat;
+   threshold_pass: opt nat;
+ };
+type Config = 
+ record {
+   min_to_propose: nat;
+   min_to_vote: nat;
+   quadratic_voting: bool;
+   threshold_fail: nat;
+   threshold_pass: nat;
+ };
+service : () -> TheDao

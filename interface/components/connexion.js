@@ -47,7 +47,6 @@ export async function plugConnection() {
     canisterId: daoCanisterId,
     interfaceFactory: idlFactoryDAO,
   })
-  //console.log("actor new", actor)
   principal.update(() => p)
   daoActor.update(() => actor)
 }

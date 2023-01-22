@@ -1,6 +1,8 @@
 <script>
-  import { view } from "../stores.js"
-  import ConnectButton from "./shared/ConnectButton.svelte"
+  import { view, principal } from "../stores.js"
+  import { plugConnection } from "./connexion"
+
+  export let message = "Sign in"
 
   let isExpanded = true
 
@@ -28,7 +30,12 @@
       <li on:click={() => handleView()}>🚀 View</li>
       <li on:click={() => handleCreate()}>⭐️ Create</li>
       <li on:click={() => handleVote()}>🗑 Vote</li>
-      <li><ConnectButton /></li>
+      <li on:click={() => plugConnection()}>
+        🔌 {message}
+        {#if $principal}
+          <span>Logged in as: {$principal}</span>
+        {/if}
+      </li>
   </ul>
 </nav>
 
@@ -71,11 +78,20 @@
     font-weight: 600;
     font-size: 1em;
     cursor: pointer;
+    border-radius: 7px;
+  }
+
+  li:last-child{
+    background-color: #333;
   }
 
   li:hover {
     background-color: #6e6b6b;
     transition: 300ms;
     transform: scale(1.08);
+
+  }
+  span{
+    font-size: 10px;
   }
 </style>

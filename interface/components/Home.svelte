@@ -33,9 +33,19 @@
     </p>
   </header>
   <section>
-    <div>
+    <div class="invert">
       <h2>Join the fun</h2>
-      <p>You'll need to setup your own <a target="_blank" rel="noreferrer" href="https://plugwallet.ooo/">Plug wallet</a>, and <a target="_blank" rel="noreferrer" href="https://dpzjy-fyaaa-aaaah-abz7a-cai.ic0.app/">grab yourself some MB tokens</a> to participate.</p>
+      <p class="large">This DAO controls the message displayed on this website. The message is 100% certified on chain, and cannot be altered by anyone else other than the Dao.</p>
+      <p class="large">
+        🔌 Install & setup <a target="_blank" rel="noreferrer" href="https://plugwallet.ooo/">Plug wallet</a><br>
+        💸 Grab yourself <a target="_blank" rel="noreferrer" href="https://dpzjy-fyaaa-aaaah-abz7a-cai.ic0.app/">some MB tokens</a>
+      </p>
+      <b>Helpful Links</b>
+      <p>
+        🧑‍💻 <a target="_blank" rel="noreferrer" href="https://zrm7a-2yaaa-aaaan-qc2ea-cai.ic0.app/">DAO Message Webpage</a><br>
+        🔥 <a target="_blank" rel="noreferrer" href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=zwnzu-xaaaa-aaaan-qc2eq-cai">DAO Canister Candid UI</a><br>
+        📚 <a target="_blank" rel="noreferrer" href="https://github.com/motoko-bootcamp/motokobootcamp-2023">Learn Motoko</a>
+      </p>
     </div>
     <div>
       <h2>Current DAO Config:</h2>
@@ -69,6 +79,16 @@
   section > div{
     border-radius: 1rem;
     padding: 1.5rem;
-    border: 1px solid
+    border: 1px solid;
+    background-color: #262626;
+  }
+  .invert{
+    background-color: #ccc;
+  }
+  .invert p.large{
+    font-size: 1.3rem;
+  }
+  .invert h2, .invert p{
+    color: #333
   }
 </style>

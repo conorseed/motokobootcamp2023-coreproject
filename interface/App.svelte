@@ -43,6 +43,9 @@
     background-color: #262626;
     line-height: 1.8;
   }
+  h1,h2,h3,h4,h5{
+    line-height: 1.1;
+  }
   .styling {
     width: 5vmin;
   }
@@ -102,6 +105,7 @@
     align-items: center;
     justify-content: center;
     font-size: calc(10px + 2vmin);
+    text-align: center;
   }
 
   .examples {

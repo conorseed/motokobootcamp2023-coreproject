@@ -5,10 +5,12 @@
   
 </script>
 
-<button on:click={() => plugConnection()}> {message} </button>
-{#if $principal}
-  <span>Logged in as: {$principal}</span>
-{/if}
+<li on:click={() => plugConnection()}>
+  <button> {message} </button>
+  {#if $principal}
+    <span>Logged in as: {$principal.slice(0,5)}...{$principal.slice(-3,4)}</span>
+  {/if}
+</li>
 
 <style>
   button{

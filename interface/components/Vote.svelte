@@ -5,12 +5,18 @@
   import { get } from "svelte/store"
   import { daoActor, principal } from "../stores"
 
+  $proposaltoVote.proposalID = "null"
+  $hasvoted = false
+
+  export let voting = false
+
   let choosenproposal = ""
   let choosenvote = ""
   let voteid = ""
   let id = ""
 
   async function vote(thisid, votepayload) {
+    voting = true
     let dao = get(daoActor)
     if (!dao) {
       return 
@@ -21,6 +27,7 @@
     } else {
       throw new Error(res.Err)
     }
+    voting = false
   }
   async function get_proposal(thisid) {
     let dao = get(daoActor)
@@ -37,8 +44,8 @@
     }
   }
 
-  let promise = vote(voteid, choosenvote)
-  let promise2 = get_proposal(id)
+  let promise = null
+  let promise2 = null
 
   function handleVoteClick(payload) {
     choosenvote = payload
@@ -70,8 +77,8 @@
         bind:value={choosenproposal}
         placeholder="Input your proposal ID here"
       />
-      <button on:click={setProposal(choosenproposal)}>Vote!</button>
-    {:else if $proposaltoVote.proposalID != "null"}
+      <button on:click={() => setProposal(choosenproposal)}>Vote!</button>
+    {:else if $proposaltoVote.proposalID != "null" && promise2}
       {#await promise2}
         <h1 class="slogan">Loading...</h1>
       {:then res}
@@ -81,14 +88,14 @@
           </h1>
           <div>
             <h1 class="slogan">Cast your vote:</h1>
-            <button on:click={() => handleVoteClick(true)}>Yes</button>
-            <button on:click={() => handleVoteClick(false)}>No</button>
-            {#if $hasvoted === true}
+            <button on:click={() => handleVoteClick(true)} disabled="{voting}">Yes</button>
+            <button on:click={() => handleVoteClick(false)} disabled="{voting}">No</button>
+            {#if $hasvoted === true && promise}
               {#await promise}
                 <h1 class="slogan">Loading...</h1>
               {:then res2}
                 <p style="color: white">
-                  Voted successfully! Current votes: {res2}
+                  {res2[2]}
                 </p>
               {:catch error}
                 <p style="color: red">{error.message}</p>
@@ -123,8 +130,10 @@
   }
 
   .bg {
-    height: 55vmin;
+    width: 100%;
+    max-width: 150px;
     animation: pulse 3s infinite;
+    margin: 0 auto;
   }
   .votingdiv {
     display: flex;
@@ -137,6 +146,9 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    width: 88%;
+    max-width: 750px;
+    margin: 0 auto
   }
 
   button {
@@ -152,7 +164,4 @@
     cursor: pointer;
   }
 
-  .delete {
-    background-color: white;
-  }
 </style>

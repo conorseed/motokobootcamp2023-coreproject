@@ -1,48 +1,62 @@
 <script>
   import Proposal from "./Proposal.svelte"
   import { get } from "svelte/store"
-  import { daoActor, principal } from "../stores"
+  import { genericActor, principal } from "../stores"
 
   async function get_all_proposals() {
-    let dao = get(daoActor);
+    let dao = get(genericActor);
     if (!dao) {
       return
     }
     let res = await dao.get_all_proposals()
-    console.log("Proposals", res)
-    return res
+    
+    return res.reverse()
   }
   let promise =  get_all_proposals()
+  async function doRefresh(){
+    promise = get_all_proposals();
+  }
 </script>
-
-{#if $principal}
-  {#await promise}
-    <p>Loading...</p>
-  {:then proposals}
-    <div id="proposals">
+<div id="proposals">
       <h1>Proposals</h1>
-      {#each proposals as post}
-        <Proposal {post} />
-      {/each}
-    </div>
-  {:catch error}
-    <p style="color: red">{error.message}</p>
-  {/await}
+{#if $principal}
+  {#key promise}
+    {#await promise}
+      <p>Loading...</p>
+    {:then proposals}
+        <div><button on:click={() => doRefresh()}>Refresh</button></div>
+        <div class="proposals">
+          {#each proposals as post}
+            <Proposal {post} />
+          {/each}
+        </div>
+    {:catch error}
+      <p style="color: red">{error.message}</p>
+    {/await}
+  {/key}
 {:else}
   <p class="example-disabled">Connect with a wallet to access this example</p>
 {/if}
+</div>
 
 <style>
+  button{
+    margin-bottom: 1rem;
+    color: white;
+    border-radius: 5px
+  }
   h1 {
     color: white;
-    font-size: 10vmin;
     font-weight: 700;
   }
 
   #proposals {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    margin-left: 10vmin;
+  }
+  .proposals{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 2rem;
   }
 </style>

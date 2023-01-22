@@ -16,3 +16,4 @@ export const hasvoted = writable(false)
 
 export const principal = writable(null)
 export const daoActor = writable(null)
+export const genericActor = writable(null)

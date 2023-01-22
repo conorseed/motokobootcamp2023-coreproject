@@ -25,7 +25,8 @@ type TheDao =
                                                nat;
                                                Vote;
                                              }) query;
-   submit_proposal: (ProposalPayload) ->
+   get_voting_power: (principal) -> (nat);
+   submit_proposal: (ProposalPayload, text, text) ->
     (variant {
        Err: text;
        Ok: record {
@@ -46,8 +47,10 @@ type TheDao =
 type ProposalStatus = 
  variant {
    executed;
+   expired;
    failed: text;
    open;
+   passed;
  };
 type ProposalPayload = 
  variant {
@@ -56,10 +59,13 @@ type ProposalPayload =
  };
 type Proposal = 
  record {
+   created: int;
+   description: text;
    payload: ProposalPayload;
    proposer: principal;
    status: ProposalStatus;
-   timestamp: int;
+   title: text;
+   updated: int;
    votes_no: nat;
    votes_yes: nat;
  };
@@ -67,6 +73,7 @@ type ConfigPayload =
  record {
    min_to_propose: opt nat;
    min_to_vote: opt nat;
+   proposal_length: opt int;
    quadratic_voting: opt bool;
    threshold_fail: opt nat;
    threshold_pass: opt nat;
@@ -75,6 +82,7 @@ type Config =
  record {
    min_to_propose: nat;
    min_to_vote: nat;
+   proposal_length: int;
    quadratic_voting: bool;
    threshold_fail: nat;
    threshold_pass: nat;

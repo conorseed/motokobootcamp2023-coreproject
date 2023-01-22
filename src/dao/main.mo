@@ -59,15 +59,15 @@ shared ({ caller = creator }) actor class TheDao() {
         
         // Auth - No anonymous proposals
         if( Principal.isAnonymous(caller) == true ){
-            //return #Err("You must be logged in to submit a proposal");
+            return #Err("You must be logged in to submit a proposal");
         };
         
         // min_to_propose requirement
         var balance = await Dao.get_token_balance(caller);
-        // TODO remove for production
-        if( Principal.isAnonymous(caller) == true ){
-            balance := 100
-        };
+        // remove for production
+        // if( Principal.isAnonymous(caller) == true ){
+        //     balance := 100
+        // };
         if( balance < config.min_to_propose ){
             return #Err("Proposal denied. You must have at least " # Nat.toText(config.min_to_propose) # "MB to Propose. Go get some: https://dpzjy-fyaaa-aaaah-abz7a-cai.ic0.app/");
         };
@@ -105,7 +105,7 @@ shared ({ caller = creator }) actor class TheDao() {
 
         // Auth - No anonymous proposals
         if( Principal.isAnonymous(caller) == true ){
-            //return #Err("You must be logged in to submit a proposal");
+            return #Err("You must be logged in to vote");
         };
 
         // Get proposal
@@ -140,11 +140,10 @@ shared ({ caller = creator }) actor class TheDao() {
 
                 // min_to_vote requirement
                 var balance = await Dao.get_token_balance(caller);
-                // TODO
-                // remove for production
-                if( Principal.isAnonymous(caller) == true ){
-                    balance := 100
-                };
+                // TODO remove for production
+                // if( Principal.isAnonymous(caller) == true ){
+                //     balance := 100
+                // };
                 if( balance < config.min_to_vote ){
                     return #Err("You must have a minimum of " # Nat.toText(config.min_to_propose) # "MB to vote. Go get some: https://dpzjy-fyaaa-aaaah-abz7a-cai.ic0.app/");
                 };
@@ -361,10 +360,10 @@ shared ({ caller = creator }) actor class TheDao() {
      */
     public shared({caller}) func get_voting_power(principal : Principal) : async Nat {
         var balance = await Dao.get_token_balance(principal);
-        // TODO remove for production
-        if( Principal.isAnonymous(caller) == true ){
-            balance := 100
-        };
+        // // TODO remove for production
+        // if( Principal.isAnonymous(caller) == true ){
+        //     balance := 100
+        // };
         return Dao.calculate_voting_power(balance, config.quadratic_voting);
     };
 
@@ -378,9 +377,6 @@ shared ({ caller = creator }) actor class TheDao() {
     /*
      * Heartbeat
      */
-     // TODO
-     // auto execute proposals once passed
-     // auto expire proposals
     system func heartbeat() : async () {
         // get time
         let time = Time.now();

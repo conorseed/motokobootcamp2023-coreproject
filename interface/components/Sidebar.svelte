@@ -1,5 +1,6 @@
 <script>
   import { view } from "../stores.js"
+  import ConnectButton from "./shared/ConnectButton.svelte"
 
   let isExpanded = true
 
@@ -27,6 +28,7 @@
       <li on:click={() => handleView()}>🚀 View</li>
       <li on:click={() => handleCreate()}>⭐️ Create</li>
       <li on:click={() => handleVote()}>🗑 Vote</li>
+      <li><ConnectButton /></li>
   </ul>
 </nav>
 
@@ -36,7 +38,7 @@
     background-color: #262626;
     color: #a2b7c4;
     transition: ease-out 200ms;
-    width: 13vmin;
+    width: 100%;
     position: relative;
   }
 
@@ -46,7 +48,8 @@
     background-color: #4c4a4a;
     color: #ffffff;
     transition: ease-out 200ms;
-    width: 16vmin;
+    width: 100%;
+    min-width: 7rem;
   }
 
   ul {
@@ -64,6 +67,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
     font-weight: 600;
     font-size: 1em;
     cursor: pointer;

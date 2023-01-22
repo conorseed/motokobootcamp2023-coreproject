@@ -44,8 +44,6 @@ module DaoHelpers{
         proposal_length: ?Int;
     };
 
-    // TODO
-    // Add in Title, Description
     public type Proposal = {
         created: Int;
         updated: Int;

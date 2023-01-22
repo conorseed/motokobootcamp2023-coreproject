@@ -1,12 +1,15 @@
 export const idlFactory = ({ IDL }) => {
   const ProposalStatus = IDL.Variant({
+    'expired' : IDL.Null,
     'open' : IDL.Null,
     'executed' : IDL.Null,
     'failed' : IDL.Text,
+    'passed' : IDL.Null,
   });
   const ConfigPayload = IDL.Record({
     'threshold_fail' : IDL.Opt(IDL.Nat),
     'threshold_pass' : IDL.Opt(IDL.Nat),
+    'proposal_length' : IDL.Opt(IDL.Int),
     'min_to_propose' : IDL.Opt(IDL.Nat),
     'quadratic_voting' : IDL.Opt(IDL.Bool),
     'min_to_vote' : IDL.Opt(IDL.Nat),
@@ -17,8 +20,11 @@ export const idlFactory = ({ IDL }) => {
   });
   const Proposal = IDL.Record({
     'status' : ProposalStatus,
+    'title' : IDL.Text,
+    'created' : IDL.Int,
     'votes_no' : IDL.Nat,
-    'timestamp' : IDL.Int,
+    'description' : IDL.Text,
+    'updated' : IDL.Int,
     'proposer' : IDL.Principal,
     'votes_yes' : IDL.Nat,
     'payload' : ProposalPayload,
@@ -26,6 +32,7 @@ export const idlFactory = ({ IDL }) => {
   const Config = IDL.Record({
     'threshold_fail' : IDL.Nat,
     'threshold_pass' : IDL.Nat,
+    'proposal_length' : IDL.Int,
     'min_to_propose' : IDL.Nat,
     'quadratic_voting' : IDL.Bool,
     'min_to_vote' : IDL.Nat,
@@ -59,8 +66,9 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Nat, Vote))],
         ['query'],
       ),
+    'get_voting_power' : IDL.Func([IDL.Principal], [IDL.Nat], []),
     'submit_proposal' : IDL.Func(
-        [ProposalPayload],
+        [ProposalPayload, IDL.Text, IDL.Text],
         [
           IDL.Variant({
             'Ok' : IDL.Tuple(IDL.Nat, Proposal),

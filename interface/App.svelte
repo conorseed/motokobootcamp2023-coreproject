@@ -1,7 +1,6 @@
 <script>
   import * as dao from "../src/declarations/dao"
   import Sidebar from "./components/Sidebar.svelte"
-  import ConnectButton from "./components/shared/ConnectButton.svelte"
   import { view } from "./stores.js"
   import Home from "./components/Home.svelte"
   import Vote from "./components/Vote.svelte"
@@ -10,26 +9,26 @@
 </script>
 
 <div class="App">
-    <ConnectButton />
   <div class="main">
     <Sidebar />
-    {#if $view.current === $view.home}
-      <Home />
-    {:else if $view.current === $view.view}
-      <View />
-    {:else if $view.current === $view.vote}
-      <Vote />
-    {:else if $view.current === $view.create}
-      <Create />
-    {/if}
-    <div class="styling" />
-  </div>
+    <main>
+      {#if $view.current === $view.home}
+        <Home />
+      {:else if $view.current === $view.view}
+        <View />
+      {:else if $view.current === $view.vote}
+        <Vote />
+      {:else if $view.current === $view.create}
+        <Create />
+      {/if}
 
-  <footer>
-    <p class="twitterfoot">
-      by <a href="https://twitter.com/iriasviel">Iri</a>
-    </p>
-  </footer>
+      <footer>
+        <p class="twitterfoot">
+          by <a target="_blank" href="https://github.com/conorseed/" rel="noreferrer">Conor</a>
+        </p>
+      </footer>
+    </main>
+  </div>
 </div>
 
 <style global>
@@ -42,13 +41,17 @@
     -moz-osx-font-smoothing: grayscale;
     color: #424242;
     background-color: #262626;
+    line-height: 1.8;
   }
   .styling {
     width: 5vmin;
   }
   .main {
-    display: flex;
-    justify-content: space-between;
+    display:grid;
+    grid-template-columns: 7rem minmax(240px, 1fr);
+  }
+  .main main{
+    padding: 2rem;
   }
 
   button {
@@ -72,13 +75,17 @@
   }
 
   .twitterfoot {
-    position: fixed;
     color: #ffffff;
     bottom: 0;
     right: 0;
     margin-right: 2vmin;
     font-size: 1em;
     font-weight: 600;
+    text-align: right;
+  }
+
+  footer{
+    margin-top: 8rem;
   }
 
   .App-logo {
@@ -88,20 +95,8 @@
     animation: pulse 3s infinite;
   }
 
-  footer {
-    position: fixed;
-    bottom: 0;
-  }
-  .footerimg {
-    position: fixed;
-    bottom: 0;
-    right: 100px;
-    height: 5vmin;
-    pointer-events: none;
-  }
-
   .App-header {
-    height: calc(100vh - 70px);
+    padding-top: 4rem;
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -4,7 +4,7 @@ import path from "path"
 import dfxJson from "./dfx.json"
 import fs from "fs"
 
-const isDev = process.env["DFX_NETWORK"] !== "ic"
+const isDev = false //process.env["DFX_NETWORK"] !== "ic"
 
 let canisterIds
 try {
@@ -24,7 +24,7 @@ try {
 const aliases = Object.entries(dfxJson.canisters).reduce(
   (acc, [name, _value]) => {
     // Get the network name, or `local` by default.
-    const networkName = process.env["DFX_NETWORK"] || "local"
+    const networkName = "ic"
     const outputRoot = path.join(
       __dirname,
       ".dfx",

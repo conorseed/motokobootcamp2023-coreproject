@@ -1,13 +1,20 @@
+// Custom imports
+import Http "http";
+import Certification "certification";
+
+// Base imports
 import Blob "mo:base/Blob";
 import Text "mo:base/Text";
 import Option "mo:base/Option";
-import Http "http";
-import Certification "certification";
 import Principal "mo:base/Principal";
 import Error "mo:base/Error";
 import Debug "mo:base/Debug";
+import Result "mo:base/Result";
+import Cycles "mo:base/ExperimentalCycles";
 
 shared ({ caller = creator }) actor class Webpage() {
+
+    var owner: Principal = creator;
 
     /* 
     ==========
@@ -15,10 +22,8 @@ shared ({ caller = creator }) actor class Webpage() {
     ==========
     */
     stable var body_text : Text = "Hello there. General Kenobi.";
-    var owner: Principal = creator;
     var dao: Principal = Principal.fromText("zwnzu-xaaaa-aaaan-qc2eq-cai");
-    // local: rrkah-fqaaa-aaaaa-aaaaq-cai
-    // ic: zwnzu-xaaaa-aaaan-qc2eq-cai
+    // local: rrkah-fqaaa-aaaaa-aaaaq-cai // ic: zwnzu-xaaaa-aaaan-qc2eq-cai
 
     /* 
     ==========
@@ -36,6 +41,22 @@ shared ({ caller = creator }) actor class Webpage() {
         Certification.update_asset_hash(main_page());
     };
 
+    /* 
+    ==========
+    Receive cycles
+    ==========
+    */
+    public func receive_cycles() : async Result.Result<Text, Text> {
+        // get cycles sent
+        let cycles = Cycles.available();
+        // if no cycles then return error
+        if(cycles == 0){
+            return #err("No cycles in call.");
+        };
+        // otherwise, eat up them cycles
+        ignore Cycles.accept(cycles);
+        return #ok("Thanks for the cycles <3");
+    };
 
     /* 
     ==========

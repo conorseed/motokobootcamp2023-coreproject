@@ -15,10 +15,6 @@
       },
       "source": ["dist/"],
       "type": "assets"
-    },
-    "testing": {
-      "main": "./src/testing/main.mo",
-      "type": "motoko"
     }
   },
   "defaults": {

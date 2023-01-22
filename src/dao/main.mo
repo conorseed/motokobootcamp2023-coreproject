@@ -13,6 +13,7 @@ import Iter "mo:base/Iter";
 import Buffer "mo:base/Buffer";
 import Error "mo:base/Error";
 import Result "mo:base/Result";
+import Cycles "mo:base/ExperimentalCycles";
 
 shared ({ caller = creator }) actor class TheDao() {
 
@@ -375,22 +376,44 @@ shared ({ caller = creator }) actor class TheDao() {
     };
 
     /*
+     * Receive cycles
+     */
+    public func receive_cycles() : async Result.Result<Text, Text> {
+        // get cycles sent
+        let cycles = Cycles.available();
+        // if no cycles then return error
+        if(cycles == 0){
+            return #err("No cycles in call.");
+        };
+        // otherwise, eat up them cycles
+        ignore Cycles.accept(cycles);
+        return #ok("Thanks for the cycles <3");
+    };
+
+    /*
      * Heartbeat
      */
+    var heartbeat_lock : Bool = false;
+
     system func heartbeat() : async () {
         // get time
         let time = Time.now();
         let heartbeat_next_run = heartbeat_last_run + Dao.seconds_to_nanoseconds(60);
 
         // only run every 1 minute
-        if(time > heartbeat_next_run){
-            
+        if(time > heartbeat_next_run and heartbeat_lock == false){
+            // Lock this up
+            heartbeat_lock := true;
+
             // Do things
             await execute_proposals();
             await expire_proposals();
 
             // update heartbeat timer
             heartbeat_last_run := time;
+
+            // unlock
+            heartbeat_lock := false;
         };
         
     };

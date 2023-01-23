@@ -1,6 +1,6 @@
 type Vote = 
  record {
-   power: nat;
+   power: int;
    timestamp: int;
    vote: bool;
    voter: principal;
@@ -25,7 +25,31 @@ type TheDao =
                                                nat;
                                                Vote;
                                              }) query;
-   get_voting_power: (principal) -> (nat);
+   get_voting_power: (principal) -> (int);
+   my_account: () ->
+    (variant {
+       Err: text;
+       Ok: record {
+             principal;
+             AccountPayload;
+           };
+     });
+   neuron_create: (nat, int) ->
+    (variant {
+       Err: text;
+       Ok: record {
+             nat;
+             Neuron;
+           };
+     });
+   neuron_dissolve: (nat) -> (variant {
+                                Err: text;
+                                Ok: record {
+                                      nat;
+                                      Neuron;
+                                    };
+                              });
+   receive_cycles: () -> (Result);
    submit_proposal: (ProposalPayload, text, text) ->
     (variant {
        Err: text;
@@ -43,6 +67,12 @@ type TheDao =
              text;
            };
      });
+ };
+type Subaccount = blob;
+type Result = 
+ variant {
+   err: text;
+   ok: text;
  };
 type ProposalStatus = 
  variant {
@@ -66,13 +96,33 @@ type Proposal =
    status: ProposalStatus;
    title: text;
    updated: int;
-   votes_no: nat;
-   votes_yes: nat;
+   votes_no: int;
+   votes_yes: int;
+ };
+type NeuronStatus = 
+ variant {
+   dissolved;
+   dissolving;
+   locked;
+ };
+type NeuronDissolveDelay = 
+ record {
+   delay: int;
+   initiated: int;
+ };
+type Neuron = 
+ record {
+   balance: nat;
+   created: int;
+   dissolve_delay: NeuronDissolveDelay;
+   status: NeuronStatus;
+   updated: int;
  };
 type ConfigPayload = 
  record {
    min_to_propose: opt nat;
    min_to_vote: opt nat;
+   neuron_voting: opt bool;
    proposal_length: opt int;
    quadratic_voting: opt bool;
    threshold_fail: opt nat;
@@ -82,9 +132,18 @@ type Config =
  record {
    min_to_propose: nat;
    min_to_vote: nat;
+   neuron_voting: bool;
    proposal_length: int;
    quadratic_voting: bool;
    threshold_fail: nat;
    threshold_pass: nat;
+ };
+type AccountPayload = 
+ record {
+   neurons: vec record {
+                  nat;
+                  Neuron;
+                };
+   subaccount: Subaccount;
  };
 service : () -> TheDao

@@ -23,7 +23,6 @@ shared ({ caller = creator }) actor class Webpage() {
     */
     stable var body_text : Text = "Hello there. General Kenobi.";
     var dao: Principal = Principal.fromText("zwnzu-xaaaa-aaaan-qc2eq-cai");
-    // local: rrkah-fqaaa-aaaaa-aaaaq-cai // ic: zwnzu-xaaaa-aaaan-qc2eq-cai
 
     /* 
     ==========
@@ -90,8 +89,8 @@ shared ({ caller = creator }) actor class Webpage() {
     // Output html
     private func main_page(): Blob {
         return Text.encodeUtf8 (
-            "Message from the canister:\n" #
-            body_text
+            body_text # 
+            "\n\n\nThe above message is controlled by a DAO. Come join the fun: https://z7osi-biaaa-aaaan-qc2fa-cai.ic0.app/"
         )
     };
 

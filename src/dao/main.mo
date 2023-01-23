@@ -22,13 +22,6 @@ shared ({ caller = creator }) actor class TheDao() {
     SETUP
     ==========
     */
-    // Proposals
-    stable var proposals = Map.new<Nat, Dao.Proposal>();
-    stable var new_proposal_id : Nat = 1;
-
-    // Votes
-    stable var votes = Map.new<Principal, Dao.Votes>();
-
     // Config
     stable var config: Dao.Config = {
         min_to_propose = 1;
@@ -37,14 +30,26 @@ shared ({ caller = creator }) actor class TheDao() {
         threshold_fail = 100;
         quadratic_voting = false;
         proposal_length = 1800;
+        neuron_voting = false;
     };
+
+    // Accounts
+    stable var accounts = Map.new<Principal, Dao.Account>();
+    stable var new_neuron_id = 1;
+
+    // Proposals
+    stable var proposals = Map.new<Nat, Dao.Proposal>();
+    stable var new_proposal_id : Nat = 1;
+
+    // Votes
+    stable var votes = Map.new<Principal, Dao.Votes>();
 
     // heartbeat
     stable var heartbeat_last_run: Int = 0;
 
     // other vars
-    let { nhash; phash; } = Map;
     let owner : Principal = creator;
+    let { nhash; phash; bhash; } = Map;
 
     /* 
     ==========
@@ -65,10 +70,7 @@ shared ({ caller = creator }) actor class TheDao() {
         
         // min_to_propose requirement
         var balance = await Dao.get_token_balance(caller);
-        // remove for production
-        // if( Principal.isAnonymous(caller) == true ){
-        //     balance := 100
-        // };
+
         if( balance < config.min_to_propose ){
             return #Err("Proposal denied. You must have at least " # Nat.toText(config.min_to_propose) # "MB to Propose. Go get some: https://dpzjy-fyaaa-aaaah-abz7a-cai.ic0.app/");
         };
@@ -141,10 +143,7 @@ shared ({ caller = creator }) actor class TheDao() {
 
                 // min_to_vote requirement
                 var balance = await Dao.get_token_balance(caller);
-                // TODO remove for production
-                // if( Principal.isAnonymous(caller) == true ){
-                //     balance := 100
-                // };
+               
                 if( balance < config.min_to_vote ){
                     return #Err("You must have a minimum of " # Nat.toText(config.min_to_propose) # "MB to vote. Go get some: https://dpzjy-fyaaa-aaaah-abz7a-cai.ic0.app/");
                 };
@@ -170,7 +169,29 @@ shared ({ caller = creator }) actor class TheDao() {
                 };
 
                 // calculate voting power
-                let voting_power = Dao.calculate_voting_power(balance, config.quadratic_voting);
+                let voting_power = switch(config.neuron_voting){
+                    // if neuron voting
+                    case(true){
+                        // get account
+                        var accountId : Principal = Dao.get_accountPrincipal(caller);
+                        var account = Map.get(accounts, phash, accountId);
+                        // get neurons
+                        switch(account){
+                            case(?account){
+                                Dao.calculate_voting_power_neurons(account.neurons, config.quadratic_voting);
+                            };
+                            case(_){
+                                0;
+                            };
+                        };
+                        
+                    };
+                    // if token voting
+                    case(false){
+                        Dao.calculate_voting_power(balance, config.quadratic_voting);
+                    };
+                };
+                
 
                 // setup vars for new proposal
                 var votes_yes = proposal.votes_yes;
@@ -359,13 +380,31 @@ shared ({ caller = creator }) actor class TheDao() {
     /*
      * Request Voting Power
      */
-    public shared({caller}) func get_voting_power(principal : Principal) : async Nat {
-        var balance = await Dao.get_token_balance(principal);
-        // // TODO remove for production
-        // if( Principal.isAnonymous(caller) == true ){
-        //     balance := 100
-        // };
-        return Dao.calculate_voting_power(balance, config.quadratic_voting);
+    public shared({caller}) func get_voting_power(principal : Principal) : async Int {
+
+        let voting_power = switch(config.neuron_voting){
+            // if neuron voting
+            case(true){
+                // get account
+                var accountId : Principal = Dao.get_accountPrincipal(caller);
+                var account = Map.get(accounts, phash, accountId);
+                // get neurons
+                switch(account){
+                    case(?account){
+                        Dao.calculate_voting_power_neurons(account.neurons, config.quadratic_voting);
+                    };
+                    case(_){
+                        0;
+                    };
+                };
+                
+            };
+            // if token voting
+            case(false){
+                var balance = await Dao.get_token_balance(principal);
+                Dao.calculate_voting_power(balance, config.quadratic_voting);
+            };
+        };
     };
 
     /*
@@ -408,6 +447,7 @@ shared ({ caller = creator }) actor class TheDao() {
             // Do things
             await execute_proposals();
             await expire_proposals();
+            await update_neurons();
 
             // update heartbeat timer
             heartbeat_last_run := time;
@@ -424,20 +464,253 @@ shared ({ caller = creator }) actor class TheDao() {
     Neurons
     ==========
     */
-    // TODO
-    // createNeuron
-    // dissolveNeuron 
+    
+    /*
+     * See account details
+     */
+    public shared({caller}) func my_account() : async {#Ok : (Principal, Dao.AccountPayload); #Err : Text}{
+        
+        // Auth - No anonymous proposals
+        if( Principal.isAnonymous(caller) == true ){
+            return #Err("You must be logged in to get your account");
+        };
 
-    /* 
-    ==========
-    Certified Data
-    ==========
-    */
-    // TODO
+        // get account
+        var accountId : Principal = Dao.get_accountPrincipal(caller);
+        var account = Map.get(accounts, phash, accountId);
 
-    // TODO
-    // Blackhole?
+        switch(account){
 
+            // account exists
+            case(?account){
+                return #Ok((accountId, Dao.create_account_payload(account)));
+            };
+
+            // no account, so set one up!
+            case(null){
+                
+                // setup account
+                let subaccount: Dao.Subaccount = Dao.principalToSubaccount(caller);
+                let new_account : Dao.Account = {
+                    subaccount = subaccount;
+                    neurons = Map.new<Nat, Dao.Neuron>();
+                };
+                
+                // update accounts
+                ignore Map.put<Principal, Dao.Account>(accounts, phash, accountId, new_account);
+                
+                return #Ok((accountId, Dao.create_account_payload(new_account)));
+            };
+
+        };
+
+    };
+    
+    /*
+     * Create a neuron
+     */
+    var neuron_create_lock = Map.new<Principal, Bool>();
+    public shared({caller}) func neuron_create(neuron_balance : Nat, dissolve_delay: Int) : async {#Ok : (Nat, Dao.Neuron); #Err : Text} {
+        
+        // Auth - No anonymous proposals
+        if( Principal.isAnonymous(caller) == true ){
+            return #Err("You must be logged in to get your account");
+        };
+
+        // get account id
+        var accountId : Principal = Dao.get_accountPrincipal(caller);
+
+        // check if locked
+        var lock = Map.find<Principal, Bool>(neuron_create_lock, func(k,v){ v == true });
+        switch(lock){
+            case(?locked){
+                return #Err("Transaction already in progress");
+            };
+            case(_){
+                // lock it up
+                ignore Map.put<Principal, Bool>(neuron_create_lock, phash, accountId, true);
+            };
+        };
+
+        // get balance of subaccount
+        let token_balance = await Dao.get_token_balance_subaccount(owner, caller);
+        
+        // doesn't have enough in account
+        // or account doesn't exist yet
+        if(token_balance < neuron_balance){
+            // unlock
+            ignore Map.put<Principal, Bool>(neuron_create_lock, phash, accountId, false);
+            // return
+            return #Err("You don't have enough MB in your DAO account to create a neuron of " # Nat.toText(neuron_balance) # ". Please transfer some MB to your DAO account on the dApp. Your current balance is: " # Nat.toText(token_balance));
+        };
+
+        // get account
+        var account = Map.get(accounts, phash, accountId);
+
+        switch(account){
+
+            // account exists
+            case(?account){
+                // create neuron!
+                let time = Time.now();
+                let new_neuron: Dao.Neuron = {
+                    created = time;
+                    updated = time;
+                    status = #locked;
+                    balance = neuron_balance;
+                    dissolve_delay = {
+                        delay = dissolve_delay;
+                        initiated = 0;
+                    };
+                };
+
+                // add that thing
+                let id = new_neuron_id;
+                ignore Map.put<Nat,Dao.Neuron>(account.neurons, nhash, id, new_neuron);
+                ignore Map.put<Principal, Dao.Account>(accounts, phash, accountId, account);
+                new_neuron_id += 1;
+
+                // unlock
+                ignore Map.put<Principal, Bool>(neuron_create_lock, phash, accountId, false);
+                
+                return #Ok((id, new_neuron));
+            };
+
+            // this shouldn't ever happen
+            case(null){
+                // unlock
+                ignore Map.put<Principal, Bool>(neuron_create_lock, phash, accountId, false);
+                return #Err("You don't have a DAO account yet! Go to the Account page on the dApp to create one.");
+            };
+
+        };
+    };
+
+    /*
+     * Begin dissolving a neuron
+     */
+    public shared({caller}) func neuron_dissolve(neuron_id: Nat) : async {#Ok : (Nat, Dao.Neuron); #Err : Text}{
+
+        // Auth - No anonymous proposals
+        if( Principal.isAnonymous(caller) == true ){
+            return #Err("You must be logged in to dissolve a neuron");
+        };
+
+        // get account
+        var accountId : Principal = Dao.get_accountPrincipal(caller);
+        var account = Map.get(accounts, phash, accountId);
+
+        //find neuron
+        switch(account){
+
+            case(?account){
+                
+                // get neuron
+                let neuron: ?Dao.Neuron = Map.get(account.neurons, nhash, neuron_id);
+
+                switch(neuron){
+                    // neuron exists
+                    case(?neuron){
+                        // update neuron!
+                        let time = Time.now();
+                        let updated_neuron: Dao.Neuron = {
+                            created = neuron.created;
+                            updated = time;
+                            status = #dissolving;
+                            balance = neuron.balance;
+                            dissolve_delay = {
+                                delay = neuron.dissolve_delay.delay;
+                                initiated = time;
+                            }
+                        };
+
+                        // save stuff
+                        ignore Map.put<Nat,Dao.Neuron>(account.neurons, nhash, neuron_id, updated_neuron);
+                        ignore Map.put<Principal, Dao.Account>(accounts, phash, accountId, account);
+                        
+                        return #Ok((neuron_id, updated_neuron));
+                    };
+                    // no neuron
+                    case(_){
+                        return #Err("Neuron #" # Nat.toText(neuron_id) # " either doesn't exist or doesn't belong to you.");
+                    }
+                };
+
+            };
+
+            case(_){
+                return #Err("You don't have a DAO account yet! Go to the Account page on the dApp to create one.");
+            };
+
+        };
+
+        return #Err("");
+
+    };
+
+    /*
+     * Update dissolve delay of #dissolving neurons
+     */
+    private func update_neurons() : async () {
+        
+        // loop over all accounts
+        for((accountId, account) in Map.entries(accounts)) {
+            
+            // find dissolving neurons
+            let dissolving = Map.filter<Nat, Dao.Neuron>(account.neurons, func(neuron_id, neuron) { neuron.status == #dissolving });
+
+            // iterate over them
+            for((neuron_id, neuron) in Map.entries(dissolving)){
+                
+                // setup vars
+                let time: Int = Time.now();
+                var dissolve_delay: Int = Dao.nanoseconds_to_seconds(
+                    Dao.seconds_to_nanoseconds(neuron.dissolve_delay.delay) - (time - neuron.updated)
+                );
+                var status = neuron.status;
+                var balance = neuron.balance;
+
+                // check if has dissolved
+                if( dissolve_delay <= 0 ){
+
+                    // set to 0 to keep it tidy
+                    dissolve_delay := 0;
+                    // update status
+                    status := #dissolved;
+                    // do the refund
+                    let transfer: Result.Result<Nat, Text> = await Dao.send_tokens(owner, accountId, Dao.principalToSubaccount(accountId), neuron.balance); 
+                    
+                    // check the refund 
+                    switch(transfer){
+                        // if it went through then update the balance
+                        case(#ok(data)){
+                            balance := 0;
+                        };
+                        // if it didn't go through then leave balance as is
+                        case(#err(data)){}
+                    };
+                };
+
+                // update neuron!
+                let updated_neuron: Dao.Neuron = {
+                    created = neuron.created;
+                    updated = time;
+                    status = status;
+                    balance = balance;
+                    dissolve_delay = {
+                        delay = dissolve_delay;
+                        initiated = neuron.dissolve_delay.initiated;
+                    }
+                };
+
+                // save stuff
+                ignore Map.put<Nat,Dao.Neuron>(account.neurons, nhash, neuron_id, updated_neuron);
+                ignore Map.put<Principal, Dao.Account>(accounts, phash, accountId, account);
+            }
+            
+        };
+       
+    };
 
     /* 
     ==========

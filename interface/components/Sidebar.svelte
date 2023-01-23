@@ -22,6 +22,9 @@
   const handleHome = () => {
     $view.current = $view.home
   }
+  const handleAccount = () => {
+    $view.current = $view.account
+  }
 </script>
 
 <nav class="expanded">
@@ -30,6 +33,7 @@
       <li on:click={() => handleView()}>🚀 View</li>
       <li on:click={() => handleCreate()}>⭐️ Create</li>
       <li on:click={() => handleVote()}>🗑 Vote</li>
+      <li on:click={() => handleAccount()}>👋 Account</li>
       <li on:click={() => plugConnection()}>
         🔌 {message}
         {#if $principal}

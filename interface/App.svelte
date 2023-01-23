@@ -6,6 +6,7 @@
   import Vote from "./components/Vote.svelte"
   import View from "./components/View.svelte"
   import Create from "./components/Create.svelte"
+  import Account from "./components/Account.svelte"
 </script>
 
 <div class="App">
@@ -20,6 +21,8 @@
         <Vote />
       {:else if $view.current === $view.create}
         <Create />
+      {:else if $view.current === $view.account}
+        <Account />
       {/if}
 
       <footer>

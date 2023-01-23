@@ -16,6 +16,7 @@
     'min_to_propose' : {title: "Minimum MB to propose", change: false, value: 1},
     'min_to_vote' : {title: "Minimum MB to vote", change: false, value: 1},
     'quadratic_voting' : {title: "Quadratic Voting", change: false, value: false},
+    'neuron_voting' : {title: "Neuron Voting", change: false, value: false},
   }
   export let submitting = false
   let summary
@@ -87,7 +88,7 @@
       {#each Object.entries(config) as [key, item]}
         <h4>{item.title}</h4>
         <div class="config">
-          {#if item.title == "Quadratic Voting"}
+          {#if item.title == "Quadratic Voting" || item.title == "Neuron Voting"}
             <label><input type="checkbox" bind:checked={item.value}> Enable</label>
           {:else}
             <input
@@ -116,7 +117,7 @@
 
 
   {:else}
-    <p class="example-disabled">Connect with a wallet to access this example</p>
+    <p class="example-disabled">Connect with a wallet to access.</p>
   {/if}
 </div>
 

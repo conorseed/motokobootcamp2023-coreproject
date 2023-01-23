@@ -114,7 +114,7 @@
       {/await}
     {/if}
   {:else}
-    <p class="example-disabled">Connect with a wallet to access this example</p>
+    <p class="example-disabled">Connect with a wallet to access.</p>
   {/if}
 </div>
 
